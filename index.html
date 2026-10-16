@@ -47,12 +47,13 @@ function overlap(b,f,t){return b.from<t&&f<b.to}
 function used(size,f,t){return B.filter(b=>b.size===size&&['accepted','checkedin'].includes(b.status)&&overlap(b,f,t))}
 function freeCage(size,f,t){const u=used(size,f,t).map(b=>b.cage);for(let i=1;i<=CAP[size];i++){const c=size+i;if(!u.includes(c))return c}}
 function cost(b,end){const d=days(b.from,end||b.to),base=b.plan==='month'?Math.ceil(d/30)*P.month[b.size]:d*P.day[b.size];const gr=(b.groom||[]).map(k=>[GR[k][0],GR[k][1]]);return{d,base,gr,sub:base+gr.reduce((s,x)=>s+x[1],0)}}
-const FIREBASE_URL='https://console.firebase.google.com/project/test-ff93f/database/test-ff93f-default-rtdb/data/~2F'; // e.g. 'https://your-project-default-rtdb.firebaseio.com' (see README steps). Empty = demo mode (this browser only)
+let FIREBASE_URL='https://mondialogt-glitch.github.io/Test/'; // e.g. 'https://your-project-default-rtdb.firebaseio.com' (see README steps). Empty = demo mode (this browser only)
+FIREBASE_URL=FIREBASE_URL.trim().replace(/\/+$/,'');
 let last='';
 const loc=()=>{try{return JSON.parse(localStorage.getItem('kp_bookings')||'[]')}catch(e){return[]}};
 const store={
  async load(){if(FIREBASE_URL){const r=await fetch(FIREBASE_URL+'/bookings.json');if(!r.ok)throw 0;const o=await r.json()||{};return Object.entries(o).map(([id,v])=>({...v,id}))}return loc()},
- async set(id,b){if(FIREBASE_URL){const r=await fetch(`${FIREBASE_URL}/bookings/${id}.json`,{method:'PUT',body:JSON.stringify(b)});if(!r.ok)throw 0}else{const a=loc();a.push({...b,id});localStorage.setItem('kp_bookings',JSON.stringify(a))}},
+ async set(id,b){if(FIREBASE_URL){const r=await fetch(`${FIREBASE_URL}/bookings/${id}.json`,{method:'PUT',body:JSON.stringify(b)});if(!r.ok)throw new Error('Database error '+r.status+(r.status==401?' (rules not published or not open)':r.status==404?' (check the database URL)':''))}else{const a=loc();a.push({...b,id});localStorage.setItem('kp_bookings',JSON.stringify(a))}},
  async update(id,d){if(FIREBASE_URL){const r=await fetch(`${FIREBASE_URL}/bookings/${id}.json`,{method:'PATCH',body:JSON.stringify(d)});if(!r.ok)throw 0}else{const a=loc().map(x=>x.id===id?{...x,...d}:x);localStorage.setItem('kp_bookings',JSON.stringify(a))}}};
 async function refresh(force){let n;try{n=await store.load()}catch(e){return}const j=JSON.stringify(n);if(j===last&&!force)return;last=j;B=n;if(view!=='book'&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))render()}
 async function init(){render();await refresh(true);render();setInterval(refresh,6000)}
@@ -88,7 +89,7 @@ async function submit(){const g=id=>document.getElementById(id).value.trim(),c=c
  if(CAP[c.size]-used(c.size,c.f,c.t).length<=0){er.textContent='Sorry, no '+SN[c.size]+' cage is free on those dates. Please try other dates.';return}
  const ref='KP-'+Math.random().toString(36).slice(2,7).toUpperCase();
  const b={ref,owner:g('on'),email:g('em'),phone:g('ph').replace(/\D/g,'').slice(-10),pet:g('pn'),type:$('#pt').value,breed:g('br'),weight:c.w,notes:g('nt'),from:c.f,to:c.t,size:c.size,plan:c.plan,groom:c.groom,status:'pending',created:Date.now()};
- try{await store.set(ref,b);await refresh(true);flash=ref;lookup={phone:b.phone,ref};render()}catch(e){er.textContent='Could not save the booking. Please try again or call us.'}}
+ try{await store.set(ref,b);await refresh(true);flash=ref;lookup={phone:b.phone,ref};render()}catch(e){er.textContent='Could not save the booking. '+(e&&e.message?e.message+'. ':'')+'Please try again or call us.'}}
 function vTrack(){const ph=lookup.phone.replace(/\D/g,'').slice(-10),list=ph?B.filter(b=>b.phone===ph&&(!lookup.ref||b.ref===lookup.ref.toUpperCase())):[];
  return `<div class="card"><h2>Find my booking</h2><div class="g2"><div><label>Phone number</label><input id="lp" value="${esc(lookup.phone)}"></div><div><label>Reference (optional)</label><input id="lr" value="${esc(lookup.ref)}"></div></div><div class="acts"><button class="btn" onclick="lookup={phone:$('#lp').value,ref:$('#lr').value};render()">Search</button></div></div>
  ${ph&&!list.length?'<div class="card mu">No bookings found.</div>':''}${list.sort((a,b)=>b.created-a.created).map(bCard).join('')}`}
