@@ -47,7 +47,7 @@ function overlap(b,f,t){return b.from<t&&f<b.to}
 function used(size,f,t){return B.filter(b=>b.size===size&&['accepted','checkedin'].includes(b.status)&&overlap(b,f,t))}
 function freeCage(size,f,t){const u=used(size,f,t).map(b=>b.cage);for(let i=1;i<=CAP[size];i++){const c=size+i;if(!u.includes(c))return c}}
 function cost(b,end){const d=days(b.from,end||b.to),base=b.plan==='month'?Math.ceil(d/30)*P.month[b.size]:d*P.day[b.size];const gr=(b.groom||[]).map(k=>[GR[k][0],GR[k][1]]);return{d,base,gr,sub:base+gr.reduce((s,x)=>s+x[1],0)}}
-let FIREBASE_URL='https://mondialogt-glitch.github.io/Test/'; // e.g. 'https://your-project-default-rtdb.firebaseio.com' (see README steps). Empty = demo mode (this browser only)
+let FIREBASE_URL='https://test-ff93f-default-rtdb.asia-southeast1.firebasedatabase.app/'; // e.g. 'https://your-project-default-rtdb.firebaseio.com' (see README steps). Empty = demo mode (this browser only)
 FIREBASE_URL=FIREBASE_URL.trim().replace(/\/+$/,'');
 let last='';
 const loc=()=>{try{return JSON.parse(localStorage.getItem('kp_bookings')||'[]')}catch(e){return[]}};
